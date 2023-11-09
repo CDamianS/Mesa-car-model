@@ -6,19 +6,23 @@ class CarAgent(mesa.Agent):
     """
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
+        self.crashed = False  # Inicializamos la variable "chocado" como False
 
     def step(self):
-        self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
+        if not self.crashed:
+            self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
 
 class IntersectingCarAgent(mesa.Agent):
     """
-    Moving upward car agent
+    Moving rightward car agent
     """
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
+        self.crashed = False  # Inicializamos la variable "chocado" como False
 
     def step(self):
-        self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
+        if not self.crashed:
+            self.model.grid.move_agent(self, (self.pos[0] + 1, self.pos[1]))
 
 class CarModel(mesa.Model):
     """
@@ -33,7 +37,7 @@ class CarModel(mesa.Model):
         # Crear agentes CarModel
         for i in range(self.num_cars):
             agent = CarAgent(i, self)
-            x = i + 8
+            x = i + 9
             y = self.random.randrange(3)
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
@@ -42,7 +46,7 @@ class CarModel(mesa.Model):
         for i in range(self.num_intersecting):
             agent = IntersectingCarAgent(i+4, self)
             x = self.random.randrange(3)
-            y = i + 8
+            y = i + 9
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
 

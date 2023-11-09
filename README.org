@@ -38,9 +38,11 @@ class CarAgent(mesa.Agent):
     """
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
+        self.crashed = False  # Inicializamos la variable "chocado" como False
 
     def step(self):
-        self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
+        if not self.crashed:
+            self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
 
 #+end_src
 
@@ -48,13 +50,15 @@ class CarAgent(mesa.Agent):
 #+begin_src python
 class IntersectingCarAgent(mesa.Agent):
     """
-    Moving upward car agent
+    Moving rightward car agent
     """
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
+        self.crashed = False  # Inicializamos la variable "chocado" como False
 
     def step(self):
-        self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
+        if not self.crashed:
+            self.model.grid.move_agent(self, (self.pos[0] + 1, self.pos[1]))
 
 #+end_src
 
@@ -73,7 +77,7 @@ class CarModel(mesa.Model):
         # Crear agentes CarModel
         for i in range(self.num_cars):
             agent = CarAgent(i, self)
-            x = i + 8
+            x = i + 9
             y = self.random.randrange(3)
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
@@ -82,7 +86,7 @@ class CarModel(mesa.Model):
         for i in range(self.num_intersecting):
             agent = IntersectingCarAgent(i+4, self)
             x = self.random.randrange(3)
-            y = i + 8
+            y = i + 9
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
 
@@ -98,12 +102,10 @@ class CarModel(mesa.Model):
 
 #+end_src
 
-#+RESULTS:
-
 * server.py
 #+begin_src python :tangle server.py
 import mesa
-from car_model import CarModel
+from car_model import CarModel, CarAgent, IntersectingCarAgent
 
 def agent_portrayal(agent):
     portrayal = {"Shape": "rect",
@@ -113,13 +115,20 @@ def agent_portrayal(agent):
                  "w": 1,
                  "h": 1}
 
+    if isinstance(agent, CarAgent):
+        portrayal["Color"] = "red"
+        portrayal["Layer"] = 1
+    else:
+        portrayal["color"] = "blue"
+        portrayal["Layer"] = 1
+
     return portrayal
 
 model_params = {
     "width": 20,
     "height": 20,
-    "num_cars": 4,
-    "num_intersecting": 4,
+    "num_cars": 2,
+    "num_intersecting": 2,
 }
 
 grid = mesa.visualization.CanvasGrid(agent_portrayal, model_params["width"], model_params["height"], 500, 500)
@@ -131,8 +140,6 @@ server = mesa.visualization.ModularServer(CarModel,
                        "Car Model",
                        model_params)
 #+end_src
-
-#+RESULTS:
 
 * run.py
 #+begin_src python :tangle run.py
