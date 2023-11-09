@@ -1,0 +1,142 @@
+#+title: Actividad M1 (Coches)
+#+author: Damian Suarez
+#+property: header-args :tangle car_model.py :session car :results value silent
+
+* Table of contents :toc:
+- [[#planteamiento][Planteamiento]]
+- [[#car_modelpy][car_model.py]]
+  - [[#modules][Modules]]
+  - [[#car-model][Car Model]]
+  - [[#intersecting-car-model][Intersecting car Model]]
+- [[#model][Model]]
+- [[#serverpy][server.py]]
+- [[#runpy][run.py]]
+
+* Planteamiento
+Realiza la siguiente simulación:
+- Inicializa las celdas ya sea como camino (espacio libre) o como obstáculo ( banquetas).
+- Todos los agentes empiezan en la parte baja del camino y cruzan hacia arriba  evitando otros agentes u obstáculos.
+- En cada paso de tiempo:
+  1. El agente revisa si la celda que pretende ocupar al tiempo siguiente está libre.
+  2. Si la celda está libre, el agente elije una dirección aleatoria para moverse (unas de las 3 celdas vecinas al frente, al frente derecha o al frente izquierda) y elije la acción de movimiento (si no puede moverse allí, permanecerá en la misma celda).
+  3. Asigne una pequeña probabilidad de fallo (aún cuando quería ir adelante podría terminar adelante a la derecha).
+  4. Si por "accidente" dos agentes ocupan la misma celda entonces el "choque" deberá permanecer en esa celda. (Una celda ocupada que reducirá el espacio libre disponible para los agentes coche.
+  5. Proponga una conducta más (por persona) que resulte en segundo tipo de agente (además del descrito arriba).
+
+* car_model.py
+** Modules
+#+begin_src python
+import mesa
+
+#+end_src
+
+** Car Model
+#+begin_src python
+class CarAgent(mesa.Agent):
+    """
+    Moving upward car agent
+    """
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+
+    def step(self):
+        self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
+
+#+end_src
+
+** Intersecting car Model
+#+begin_src python
+class IntersectingCarAgent(mesa.Agent):
+    """
+    Moving upward car agent
+    """
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+
+    def step(self):
+        self.model.grid.move_agent(self, (self.pos[0], self.pos[1] + 1))
+
+#+end_src
+
+* Model
+#+begin_src python
+class CarModel(mesa.Model):
+    """
+    Model class for the CarModel.
+    """
+    def __init__(self, width, height, num_cars, num_intersecting):
+        self.num_cars = num_cars
+        self.num_intersecting= num_intersecting
+        self.grid = mesa.space.MultiGrid(width, height, True)
+        self.schedule = mesa.time.RandomActivation(self)
+
+        # Crear agentes CarModel
+        for i in range(self.num_cars):
+            agent = CarAgent(i, self)
+            x = i + 8
+            y = self.random.randrange(3)
+            self.grid.place_agent(agent, (x, y))
+            self.schedule.add(agent)
+
+        # Crear agentes intersecciones
+        for i in range(self.num_intersecting):
+            agent = IntersectingCarAgent(i+4, self)
+            x = self.random.randrange(3)
+            y = i + 8
+            self.grid.place_agent(agent, (x, y))
+            self.schedule.add(agent)
+
+
+        # DataCollector para recopilar información (opcional)
+        self.datacollector = mesa.DataCollector()
+
+    def step(self):
+        # Avanzar en un paso de tiempo
+        self.schedule.step()
+        # Recopilar datos (opcional)
+        self.datacollector.collect(self)
+
+#+end_src
+
+#+RESULTS:
+
+* server.py
+#+begin_src python :tangle server.py
+import mesa
+from car_model import CarModel
+
+def agent_portrayal(agent):
+    portrayal = {"Shape": "rect",
+                 "Color": "blue",
+                 "Filled": "true",
+                 "Layer": 0,
+                 "w": 1,
+                 "h": 1}
+
+    return portrayal
+
+model_params = {
+    "width": 20,
+    "height": 20,
+    "num_cars": 4,
+    "num_intersecting": 4,
+}
+
+grid = mesa.visualization.CanvasGrid(agent_portrayal, model_params["width"], model_params["height"], 500, 500)
+
+chart = mesa.visualization.ChartModule([{"Label": "Número de agentes", "Color": "red"}])
+
+server = mesa.visualization.ModularServer(CarModel,
+                       [grid, chart],
+                       "Car Model",
+                       model_params)
+#+end_src
+
+#+RESULTS:
+
+* run.py
+#+begin_src python :tangle run.py
+from server import server
+
+server.launch(open_browser=True)
+#+end_src
